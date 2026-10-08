@@ -1,0 +1,31 @@
+# Business definitions the schema cannot express. Each entry: term -> definition.
+# `keywords` (in glossary_keywords.yaml-style below) drive the schema-linking keyword boost.
+revenue: >
+  SUM(order_items.price) from orders whose order_status NOT IN ('canceled','unavailable').
+  Never sum order_payments.payment_value after joining to order_items (fan-out double counting).
+  Freight is not revenue unless the question says "including freight".
+customer: >
+  A real person is customer_unique_id, not customer_id (customer_id is per order).
+  "How many customers" = COUNT(DISTINCT customers.customer_unique_id).
+order_count: >
+  Count distinct orders with COUNT(DISTINCT order_id) when joining to order_items or order_payments.
+valid_order: >
+  Unless the question says otherwise, "orders" for sales analysis excludes order_status 'canceled' and 'unavailable'.
+  For plain counts by status (e.g. "how many orders were canceled") filter exactly on that status.
+delivered_order: >
+  order_status = 'delivered'. Delivery time = date_diff('day', order_purchase_timestamp, order_delivered_customer_date),
+  only where order_delivered_customer_date IS NOT NULL.
+late_delivery: >
+  order_delivered_customer_date > order_estimated_delivery_date (both NOT NULL).
+category: >
+  Report English category names: join products.product_category_name to
+  category_translation.product_category_name and use product_category_name_english.
+average_order_value: >
+  Revenue / COUNT(DISTINCT order_id), using order_items.price on valid orders.
+review_score: >
+  1-5 satisfaction score in order_reviews. An order may have several reviews; average over review rows unless asked per order.
+month: >
+  Use date_trunc('month', order_purchase_timestamp) for monthly trends; the purchase timestamp is the order date.
+dialect: >
+  DuckDB SQL. Dates: date_trunc('month', ts), date_diff('day', a, b), strftime(ts, '%Y-%m'), EXTRACT(year FROM ts).
+  Use ROUND(x, 2) for money. No profit/cost data exists in this database.

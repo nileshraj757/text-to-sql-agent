@@ -1,0 +1,11 @@
+name: step6b_small_model
+provider: ollama
+model: qwen2.5-coder:7b
+temperature: 0.0
+descriptions: true
+samples: true
+glossary: true
+fewshot_k: 3
+pruning: false
+max_retries: 2
+guardrails: true

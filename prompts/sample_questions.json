@@ -1,0 +1,47 @@
+[
+ {
+  "question": "How many orders were placed in 2017?",
+  "sql": "SELECT COUNT(*) FROM orders WHERE EXTRACT(year FROM order_purchase_timestamp) = 2017",
+  "assumptions": []
+ },
+ {
+  "question": "What are the top 10 English product categories by revenue, excluding canceled and unavailable orders?",
+  "sql": "SELECT t.product_category_name_english AS category, ROUND(SUM(oi.price), 2) AS revenue FROM order_items oi JOIN orders o USING (order_id) JOIN products p USING (product_id) JOIN category_translation t USING (product_category_name) WHERE o.order_status NOT IN ('canceled','unavailable') GROUP BY 1 ORDER BY revenue DESC, category LIMIT 10",
+  "assumptions": [
+   "Revenue = SUM(order_items.price) excluding canceled/unavailable orders"
+  ]
+ },
+ {
+  "question": "How many orders came from each customer state?",
+  "sql": "SELECT c.customer_state, COUNT(*) AS orders FROM orders o JOIN customers c USING (customer_id) GROUP BY 1 ORDER BY orders DESC",
+  "assumptions": [
+   "Counting all order statuses"
+  ]
+ },
+ {
+  "question": "What is the average delivery time in days by customer state?",
+  "sql": "SELECT c.customer_state, ROUND(AVG(date_diff('day', o.order_purchase_timestamp, o.order_delivered_customer_date)), 1) AS avg_days FROM orders o JOIN customers c USING (customer_id) WHERE o.order_delivered_customer_date IS NOT NULL GROUP BY 1 ORDER BY avg_days",
+  "assumptions": [
+   "Only delivered orders with a delivery date"
+  ]
+ },
+ {
+  "question": "How are sales trending by month?",
+  "sql": "SELECT date_trunc('month', o.order_purchase_timestamp) AS month, ROUND(SUM(oi.price), 2) AS revenue FROM orders o JOIN order_items oi USING (order_id) WHERE o.order_status NOT IN ('canceled','unavailable') GROUP BY 1 ORDER BY 1",
+  "assumptions": [
+   "Monthly revenue, excluding canceled/unavailable orders"
+  ]
+ },
+ {
+  "question": "How many real customers placed more than one order?",
+  "sql": "SELECT COUNT(*) AS repeat_customers FROM (SELECT c.customer_unique_id FROM customers c JOIN orders o USING (customer_id) GROUP BY 1 HAVING COUNT(DISTINCT o.order_id) > 1)",
+  "assumptions": [
+   "A customer is a unique person (customer_unique_id), not a customer_id"
+  ]
+ },
+ {
+  "question": "What is the average review score for each order status?",
+  "sql": "SELECT o.order_status, ROUND(AVG(r.review_score), 2) AS avg_score FROM order_reviews r JOIN orders o USING (order_id) GROUP BY 1 ORDER BY 2 DESC",
+  "assumptions": []
+ }
+]

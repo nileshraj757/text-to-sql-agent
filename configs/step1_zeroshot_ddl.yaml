@@ -1,0 +1,11 @@
+name: step1_zeroshot_ddl
+provider: groq
+model: openai/gpt-oss-120b
+temperature: 0.0
+descriptions: false
+samples: false
+glossary: false
+fewshot_k: 0
+pruning: false
+max_retries: 0
+guardrails: false

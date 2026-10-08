@@ -1,0 +1,11 @@
+name: step4_pruning
+provider: groq
+model: openai/gpt-oss-120b
+temperature: 0.0
+descriptions: true
+samples: true
+glossary: true
+fewshot_k: 3
+pruning: true
+max_retries: 0
+guardrails: false

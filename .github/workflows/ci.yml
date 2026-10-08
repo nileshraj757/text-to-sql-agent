@@ -1,0 +1,28 @@
+name: ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e ".[dev]"
+      - name: Build database (public mirror of the Olist CSVs)
+        run: ./scripts/download_data.sh && python scripts/build_db.py
+      - run: python eval/build_testset.py && python eval/verify_gold.py
+      - run: pytest -q                      # validator, executor, comparator, pipeline (mock LLM), prompts
+      - name: Pipeline regression gate (oracle LLM = tests plumbing, validator false positives, comparator)
+        run: |
+          python eval/run_eval.py --config configs/best.yaml --split all --subset smoke --llm oracle --out out.json
+          python eval/check_thresholds.py out.json eval/thresholds.json
+      - name: Red-team gate (offline layer isolation)
+        run: |
+          python eval/redteam/run_redteam.py
+          python eval/check_redteam.py eval/results/redteam_offline.json
+      - name: Model-quality gate (replay cached real-LLM responses, only if a cache snapshot is committed)
+        run: |
+          if [ -d eval/cache_snapshot ]; then
+            T2S_CACHE_DIR=eval/cache_snapshot python eval/run_eval.py --config configs/best.yaml --split dev --cache-only --out model.json
+            python eval/check_thresholds.py model.json eval/thresholds_model.json
+          else echo "no cache snapshot committed: skipping model-quality replay"; fi

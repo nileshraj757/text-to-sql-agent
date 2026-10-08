@@ -1,0 +1,12 @@
+name: step3_fewshot
+provider: groq
+model: openai/gpt-oss-120b
+temperature: 0.0
+descriptions: true
+samples: true
+glossary: true
+fewshot_k: 3
+fewshot_mode: retrieved
+pruning: false
+max_retries: 0
+guardrails: false

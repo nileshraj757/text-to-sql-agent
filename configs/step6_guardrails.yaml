@@ -1,0 +1,11 @@
+name: step6_guardrails
+provider: groq
+model: openai/gpt-oss-120b
+temperature: 0.0
+descriptions: true
+samples: true
+glossary: true
+fewshot_k: 3
+pruning: false
+max_retries: 2
+guardrails: true

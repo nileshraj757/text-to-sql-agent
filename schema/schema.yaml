@@ -1,0 +1,106 @@
+# Table/column descriptions + join paths. CSV-loaded tables have no declared FKs, so they live here.
+# Keys starting with "_" are table metadata. Columns in `_deny_samples` never get sample values in prompts
+# (free text = prompt-injection channel).
+orders:
+  _desc: One row per customer order (order header and lifecycle timestamps).
+  _joins:
+    - orders.customer_id -> customers.customer_id   (customer_id is per-ORDER; use customers.customer_unique_id to identify a person)
+    - orders.order_id -> order_items.order_id       (one order has many items)
+    - orders.order_id -> order_payments.order_id    (one order has many payment rows)
+    - orders.order_id -> order_reviews.order_id     (one order has 0..n reviews)
+  columns:
+    order_id: Primary key of the order.
+    customer_id: Per-order customer key (joins to customers.customer_id). NOT a unique person.
+    order_status: Lifecycle status of the order.
+    order_purchase_timestamp: When the customer placed the order.
+    order_approved_at: When payment was approved.
+    order_delivered_carrier_date: When the order was handed to the logistics carrier.
+    order_delivered_customer_date: When the customer received the order (NULL if not delivered).
+    order_estimated_delivery_date: Delivery date promised to the customer at purchase time.
+customers:
+  _desc: One row per (order, customer_id); customer_unique_id identifies the real person.
+  _joins:
+    - customers.customer_id -> orders.customer_id
+  columns:
+    customer_id: Per-order key. A returning person gets a new customer_id each order.
+    customer_unique_id: Stable identifier of the real customer. Use COUNT(DISTINCT customer_unique_id) for "how many customers".
+    customer_zip_code_prefix: First 5 digits of the customer zip code.
+    customer_city: Customer city (lowercase, Portuguese).
+    customer_state: Two-letter Brazilian state code (e.g. SP, RJ).
+order_items:
+  _desc: One row per item in an order. Revenue lives here (price). Many rows per order.
+  _joins:
+    - order_items.order_id -> orders.order_id
+    - order_items.product_id -> products.product_id
+    - order_items.seller_id -> sellers.seller_id
+  columns:
+    order_id: Order this item belongs to.
+    order_item_id: Sequence number of the item within the order (1, 2, 3...). Not a product id.
+    product_id: Product sold.
+    seller_id: Seller that fulfilled this item.
+    shipping_limit_date: Seller's deadline to hand the item to the carrier.
+    price: Item price in BRL, excluding freight.
+    freight_value: Freight cost for this item in BRL.
+order_payments:
+  _desc: One row per payment instalment/method used on an order. An order can have several rows.
+  _joins:
+    - order_payments.order_id -> orders.order_id
+  columns:
+    order_id: Order paid.
+    payment_sequential: Sequence of payment methods used for the order.
+    payment_type: Payment method.
+    payment_installments: Number of instalments chosen.
+    payment_value: Amount paid in BRL (includes freight). Do NOT join with order_items and sum (fan-out).
+order_reviews:
+  _desc: Customer satisfaction reviews, 0..n per order.
+  _joins:
+    - order_reviews.order_id -> orders.order_id
+  _deny_samples: [review_comment_title, review_comment_message]
+  columns:
+    review_id: Review identifier (not unique across the table).
+    order_id: Reviewed order.
+    review_score: Satisfaction score 1 (worst) to 5 (best).
+    review_comment_title: Free-text title (untrusted text).
+    review_comment_message: Free-text comment (untrusted text).
+    review_creation_date: When the review survey was sent.
+    review_answer_timestamp: When the customer answered the survey.
+products:
+  _desc: Product catalogue. Category names are in Portuguese.
+  _joins:
+    - products.product_category_name -> category_translation.product_category_name
+  columns:
+    product_id: Primary key.
+    product_category_name: Category in Portuguese (may be NULL). Translate through category_translation.
+    product_name_lenght: Characters in the product name (column name is misspelled in the source data).
+    product_description_lenght: Characters in the description (misspelled in the source data).
+    product_photos_qty: Number of photos.
+    product_weight_g: Weight in grams.
+    product_length_cm: Package length in cm.
+    product_height_cm: Package height in cm.
+    product_width_cm: Package width in cm.
+sellers:
+  _desc: Marketplace sellers.
+  _joins:
+    - sellers.seller_id -> order_items.seller_id
+  columns:
+    seller_id: Primary key.
+    seller_zip_code_prefix: First 5 digits of the seller zip code.
+    seller_city: Seller city.
+    seller_state: Two-letter Brazilian state code.
+category_translation:
+  _desc: Portuguese -> English product category names.
+  _joins:
+    - category_translation.product_category_name -> products.product_category_name
+  columns:
+    product_category_name: Category name in Portuguese.
+    product_category_name_english: Category name in English.
+geolocation:
+  _desc: Zip-code prefix to lat/lng lookup. Many rows per prefix; large table (1M rows). Rarely needed.
+  _joins:
+    - geolocation.geolocation_zip_code_prefix -> customers.customer_zip_code_prefix / sellers.seller_zip_code_prefix
+  columns:
+    geolocation_zip_code_prefix: First 5 digits of the zip code.
+    geolocation_lat: Latitude.
+    geolocation_lng: Longitude.
+    geolocation_city: City name.
+    geolocation_state: Two-letter state code.
