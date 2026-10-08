@@ -13,6 +13,7 @@ def _load_dotenv(path: Path) -> None:
             line = line.strip()
             if line and not line.startswith("#") and "=" in line:
                 k, v = line.split("=", 1)
+                v = v.split(" #")[0].split("\t#")[0]            # strip inline comments
                 if v.strip():
                     os.environ.setdefault(k.strip(), v.strip().strip('"\''))
 

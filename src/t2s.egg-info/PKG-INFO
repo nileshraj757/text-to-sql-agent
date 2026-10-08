@@ -1,0 +1,27 @@
+Metadata-Version: 2.4
+Name: t2s
+Version: 0.1.0
+Summary: Text-to-SQL analytics agent with rigorous evaluation (Olist e-commerce)
+Requires-Python: >=3.10
+Requires-Dist: duckdb>=1.1
+Requires-Dist: sqlglot>=25
+Requires-Dist: pandas
+Requires-Dist: numpy
+Requires-Dist: plotly
+Requires-Dist: pyyaml
+Requires-Dist: pydantic>=2
+Requires-Dist: pydantic-settings
+Requires-Dist: tenacity
+Requires-Dist: diskcache
+Requires-Dist: requests
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: streamlit
+Requires-Dist: slowapi
+Requires-Dist: openpyxl
+Requires-Dist: python-multipart
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: httpx; extra == "dev"
+Provides-Extra: embed
+Requires-Dist: sentence-transformers; extra == "embed"

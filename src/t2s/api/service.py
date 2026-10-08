@@ -27,10 +27,14 @@ class AskService:
 
     def __init__(self, config_path: str | None = None, with_explanation: bool = True):
         self.cfg = AgentConfig.load(config_path or os.environ.get("T2S_CONFIG", ROOT / "configs/best.yaml"))
+        # app-level overrides from .env (eval runs read only the YAML so results stay reproducible)
+        over = {k: os.environ[e] for k, e in (("provider", "T2S_PROVIDER"), ("model", "T2S_MODEL")) if os.environ.get(e)}
+        if over:
+            self.cfg = self.cfg.model_copy(update=over)
         self.llm, self.mode = None, "demo"
         try:
             from ..llm.client import make_llm
-            self.llm = make_llm(self.cfg, cache=True)
+            self.llm = make_llm(self.cfg, cache=True, fallback=os.environ.get("T2S_FALLBACK") or None)
             self.mode = "live"
         except Exception:  # noqa: BLE001 - missing key etc.
             pass
